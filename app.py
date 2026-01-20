@@ -1,6 +1,7 @@
 
 """
 Dashboard Ultra Évolué - Suivi mensuel des classes (Excel multi-feuilles)
+Auteur: ChatGPT
 Usage:
     pip install -r requirements.txt
     streamlit run app.py
@@ -40,13 +41,13 @@ import base64
 # CONFIGURATION — DEPARTEMENT (branding + emails + PDF)
 # =========================================================
 DEPT_NAME = "Département Réseaux & Systèmes"
-DEPT_CODE = "DRS"
+DEPT_CODE = "RS"
 
 HEAD_NAME  = "Latyr Ndiaye"
 HEAD_EMAIL = "landiaye@groupeisi.com"
 
-ASSIST_NAME  = "Ndeye Ramatoulaye Diop"     # optionnel
-ASSIST_EMAIL = "nrdiop@groupeisi.com"     # optionnel
+ASSIST_NAME  = ""     # optionnel
+ASSIST_EMAIL = ""     # optionnel
 
 INSTITUTION_NAME = "Institut Supérieur Informatique"
 
@@ -847,15 +848,32 @@ def df_to_excel_bytes(sheets: Dict[str, pd.DataFrame]) -> bytes:
             sheet_df.to_excel(writer, sheet_name=name[:31], index=False)
     return output.getvalue()
 
-@st.cache_data(show_spinner=False, ttl=600)  # 10 minutes au lieu de 60s
-def fetch_excel_from_url(url: str) -> bytes:
-    r = requests.get(
-        url.strip(),
-        timeout=30,
-        headers={"Cache-Control": "no-cache"}  # évite certains proxies bizarres
-    )
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+
+def _with_cachebuster(u: str, cb: str) -> str:
+    p = urlparse(u)
+    q = dict(parse_qsl(p.query))
+    q["_cb"] = cb
+    return urlunparse((p.scheme, p.netloc, p.path, p.params, urlencode(q), p.fragment))
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def fetch_excel_from_url(url: str, cache_bust: str) -> bytes:
+    """
+    Télécharge un Excel en évitant:
+      - cache Streamlit (grâce à cache_bust)
+      - cache proxy/CDN (headers)
+    """
+    headers = {
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+    final_url = _with_cachebuster(url.strip(), cache_bust)
+    r = requests.get(final_url, timeout=45, headers=headers)
     r.raise_for_status()
     return r.content
+
 
 @st.cache_data(show_spinner=False)
 def make_long(df_period: pd.DataFrame) -> pd.DataFrame:
@@ -1129,6 +1147,21 @@ def render_badged_table(df: pd.DataFrame, columns: List[str], title: str = "") -
     html = tmp[columns].to_html(escape=False, index=False, classes="iaid-table")
     st.markdown(f'<div class="table-wrap">{html}</div>', unsafe_allow_html=True)
 
+@st.cache_data(show_spinner=False, max_entries=50)
+def fetch_headers(url: str, cache_bust: str) -> dict:
+    headers = {
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+    r = requests.head(url.strip(), timeout=20, headers=headers, allow_redirects=True)
+    r.raise_for_status()
+    return dict(r.headers)
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def fetch_excel_if_changed(url: str, etag_or_lm: str) -> bytes:
+    # si etag_or_lm change -> refetch, sinon cache streamlit
+    return fetch_excel_from_url(url, etag_or_lm)
 
 # -----------------------------
 # Lecture Excel multi-feuilles
@@ -1455,7 +1488,13 @@ with st.sidebar:
     auto_refresh = st.checkbox("Rafraîchir automatiquement (URL)", value=False)  # ✅ OFF par défaut
     refresh_sec = st.slider("Intervalle (secondes)", 30, 900, 300, 30)          # ✅ 300s conseillé
 
-    if st.button("🔄 Rafraîchir maintenant"):
+    # 1) Heartbeat de rerun
+    tick = 0
+    if import_mode == "URL (auto)" and auto_refresh:
+        tick = st_autorefresh(interval=refresh_sec * 1000, key="iaid_refresh_tick")
+
+    if st.button("🔄 Rafraîchir maintenant (FORCE)"):
+        st.cache_data.clear()
         st.rerun()
 
 
@@ -1466,16 +1505,36 @@ with st.sidebar:
 
         if url.strip():
             try:
-                file_bytes = fetch_excel_from_url(url.strip())
-                source_label = "URL (cached)"
+                window = int(time.time() // max(1, refresh_sec))
+                cache_bust = f"tick={tick}-w={window}"
+
+                h = fetch_headers(url.strip(), cache_bust)
+
+                etag = (h.get("ETag") or "").strip()
+                lm   = (h.get("Last-Modified") or "").strip()
+
+                signature = etag or lm or f"w={window}"
+
+                file_bytes = fetch_excel_if_changed(url.strip(), signature)
+                source_label = f"URL smart ({signature})"
+                import hashlib
+                digest = hashlib.md5(file_bytes).hexdigest()[:10]
+                st.caption(f"📦 URL: {len(file_bytes)/1024:.1f} KB | md5: {digest} | tick={tick}")
+
+
+
             except Exception as e:
                 st.error(f"Erreur téléchargement: {e}")
+
 
 
     else:
         uploaded = st.file_uploader("Importer le fichier Excel (.xlsx)", type=["xlsx"])
         if uploaded is not None:
             file_bytes = uploaded.getvalue()
+            import hashlib
+            digest = hashlib.md5(file_bytes).hexdigest()[:10]
+            st.caption(f"📦 Fichier: {len(file_bytes)/1024:.1f} KB | md5: {digest}")
             source_label = f"Upload: {uploaded.name}"
 
     sidebar_card_end()
@@ -1801,9 +1860,8 @@ if file_bytes is None:
     st.info("➡️ Fournis une source (URL auto via Secrets ou Upload manuel).")
     st.stop()
 
-# 🔄 Auto-refresh propre (Streamlit Cloud) — placé tôt pour éviter double rendering
 if import_mode == "URL (auto)" and auto_refresh:
-    st_autorefresh(interval=refresh_sec * 1000, key=f"{DEPT_CODE}_refresh")
+    tick = st_autorefresh(interval=refresh_sec * 1000, key="iaid_refresh_tick")
 
 
 st.caption(f"Source active : **{source_label}**")
