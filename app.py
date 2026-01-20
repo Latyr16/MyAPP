@@ -40,7 +40,7 @@ import base64
 # CONFIGURATION — DEPARTEMENT (branding + emails + PDF)
 # =========================================================
 DEPT_NAME = "Département Réseaux & Systèmes"
-DEPT_CODE = "RS"
+DEPT_CODE = "DRS"
 
 HEAD_NAME  = "Latyr Ndiaye"
 HEAD_EMAIL = "landiaye@groupeisi.com"
