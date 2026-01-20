@@ -1,7 +1,6 @@
 
 """
 Dashboard Ultra Évolué - Suivi mensuel des classes (Excel multi-feuilles)
-Auteur: ChatGPT
 Usage:
     pip install -r requirements.txt
     streamlit run app.py
@@ -46,8 +45,8 @@ DEPT_CODE = "RS"
 HEAD_NAME  = "Latyr Ndiaye"
 HEAD_EMAIL = "landiaye@groupeisi.com"
 
-ASSIST_NAME  = ""     # optionnel
-ASSIST_EMAIL = ""     # optionnel
+ASSIST_NAME  = "Ndeye Ramatoulaye Diop"     # optionnel
+ASSIST_EMAIL = "nrdiop@groupeisi.com"     # optionnel
 
 INSTITUTION_NAME = "Institut Supérieur Informatique"
 
