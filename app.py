@@ -1493,7 +1493,7 @@ with st.sidebar:
     if import_mode == "URL (auto)" and auto_refresh:
         tick = st_autorefresh(interval=refresh_sec * 1000, key="iaid_refresh_tick")
 
-    if st.button("🔄 Rafraîchir maintenant (FORCE)"):
+    if st.button("🔄 Rafraîchir maintenant "):
         st.cache_data.clear()
         st.rerun()
 
