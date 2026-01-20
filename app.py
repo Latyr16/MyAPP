@@ -37,9 +37,25 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 import base64
 
+# =========================================================
+# CONFIGURATION — DEPARTEMENT (branding + emails + PDF)
+# =========================================================
+DEPT_NAME = "Département Réseaux & Systèmes"
+DEPT_CODE = "RS"
+
+HEAD_NAME  = "Latyr Ndiaye"
+HEAD_EMAIL = "landiaye@groupeisi.com"
+
+ASSIST_NAME  = ""     # optionnel
+ASSIST_EMAIL = ""     # optionnel
+
+INSTITUTION_NAME = "Institut Supérieur Informatique"
+
+DASHBOARD_LABEL = "Tableau de bord de pilotage mensuel — Suivi des enseignements par classe & par matière"
+
 
 st.set_page_config(
-    page_title="IAID — Suivi des classes (Dashboard)",
+    page_title=f"{DEPT_CODE} — Suivi des classes (Dashboard)",
     layout="wide",
     page_icon="📊",
 )
@@ -989,7 +1005,7 @@ def build_prof_email_html(
                   font-family:Arial,Helvetica,sans-serif;color:#0F172A;">
 
         <div style="padding:22px 26px;background:linear-gradient(90deg,#0B3D91,#1F6FEB);color:#FFFFFF;">
-          <div style="font-size:18px;font-weight:900;">IAID — Notification Enseignant</div>
+        <div style="font-size:18px;font-weight:900;">{DEPT_CODE} — Notification Enseignant</div>
           <div style="margin-top:6px;font-size:13px;font-weight:700;opacity:.95;">
             {lot_label} • Période : {mois_min} → {mois_max}
           </div>
@@ -1033,13 +1049,13 @@ def build_prof_email_html(
           </div>
 
           <p style="font-size:13px;color:#475569;">
-            Message généré automatiquement — pilotage académique IAID.
+            Message généré automatiquement — pilotage académique {DEPT_CODE}.
           </p>
         </div>
 
         <div style="padding:14px 26px;background:#FBFCFF;border-top:1px solid #E3E8F0;
                     font-size:12px;color:#475569;text-align:center;">
-          Département IA &amp; Ingénierie des Données (IAID)
+            {DEPT_NAME}
         </div>
 
       </div>
@@ -1236,7 +1252,7 @@ def build_pdf_report(
                 f"""
                 <b>Date :</b> {date_gen}<br/>
                 <b>Période :</b> {periode_str}<br/>
-                <b>Référence :</b> IAID-SUIVI-{now_dt.strftime("%Y%m")}
+                <b>Référence :</b> {DEPT_CODE}-SUIVI-{now_dt.strftime("%Y%m")}
                 """,
                 P
             )
@@ -1408,7 +1424,7 @@ with st.sidebar:
         st.markdown(
             """
             <div class="sidebar-logo-wrap" style="font-weight:950;color:#0B3D91;font-size:18px;">
-            IAID
+            {DEPT_CODE}
             </div>
             """,
             unsafe_allow_html=True
@@ -1445,7 +1461,7 @@ with st.sidebar:
 
     if import_mode == "URL (auto)":
         st.caption("Recommandé Streamlit Cloud : lien direct vers un fichier .xlsx")
-        default_url = st.secrets.get("IAID_EXCEL_URL", "")
+        default_url = st.secrets.get("RS_EXCEL_URL", "")
         url = st.text_input("URL du fichier Excel (.xlsx)", value=default_url)
 
         if url.strip():
@@ -1527,7 +1543,7 @@ with st.sidebar:
     # =========================================================
     sidebar_card("📩 Rappel DG/DGE (mensuel)")
 
-    dashboard_url = st.secrets.get("DASHBOARD_URL", "https://rapportdeptiaid.streamlit.app/")
+    dashboard_url = st.secrets.get("RS_DASHBOARD_URL", "https://rapportdeptrx.streamlit.app/")
     recips_raw = st.secrets.get("DG_EMAILS", "")
     recipients = [x.strip() for x in recips_raw.split(",") if x.strip()]
 
@@ -1548,23 +1564,25 @@ with st.sidebar:
 
 
 
-    subject = f"IAID — Rappel mensuel de pilotage des enseignements ({today.strftime('%m/%Y')})"
+    subject = f"{DEPT_CODE} — Rappel mensuel de pilotage des enseignements ({today.strftime('%m/%Y')})"
     body_text = f"""
-    Département IA & Ingénierie des Données (IAID)
+    {DEPT_NAME}
     Notification mensuelle — Pilotage des enseignements • {today.strftime('%m/%Y')}
     Mise à jour : {dt.datetime.now().strftime('%d/%m/%Y %H:%M')}
 
     Bonjour Madame, Monsieur,
 
-    Dans le cadre du pilotage académique, nous vous invitons à consulter le Dashboard IAID (avancement par classe et par matière, alertes, synthèses et exports officiels).
+    Dans le cadre du pilotage académique, nous vous invitons à consulter le Dashboard {DEPT_CODE}
+    (avancement par classe et par matière, alertes, synthèses et exports officiels).
 
-    Ouvrir le Dashboard IAID →
+    Ouvrir le Dashboard {DEPT_CODE} →
     {dashboard_url}
 
     📌 Informations clés
     Période : {today.strftime('%m/%Y')}
     Lien : {dashboard_url}
     """.strip()
+
 
     body_html = f"""
     <!doctype html>
@@ -1596,7 +1614,7 @@ with st.sidebar:
                 color:#FFFFFF;
             ">
             <div style="font-size:18px;font-weight:900;">
-                Département IA &amp; Ingénierie des Données (IAID)
+                {DEPT_NAME}
             </div>
             <div style="margin-top:6px;font-size:13px;font-weight:700;opacity:.95;">
                 Notification mensuelle — Pilotage des enseignements • {today.strftime('%m/%Y')}
@@ -1615,7 +1633,7 @@ with st.sidebar:
 
             <p>
                 Dans le cadre du <b>pilotage académique</b>, nous vous invitons à consulter le
-                <b>Dashboard IAID</b> (avancement par classe et par matière, alertes, synthèses
+                <b>Dashboard {DEPT_CODE}</b>(avancement par classe et par matière, alertes, synthèses
                 et exports officiels).
             </p>
 
@@ -1632,7 +1650,7 @@ with st.sidebar:
                     font-size:14px;
                     box-shadow:0 10px 24px rgba(14,30,37,0.25);
                 ">
-                Ouvrir le Dashboard IAID →
+                Ouvrir le Dashboard {DEPT_CODE} →
                 </a>
             </div>
 
@@ -1667,7 +1685,7 @@ with st.sidebar:
                 color:#475569;
                 text-align:center;
             ">
-            Message automatique — Département IA &amp; Ingénierie des Données (IAID)
+            Message automatique — {DEPT_NAME}
             </div>
 
         </div>
@@ -1742,10 +1760,10 @@ f"""
 <div class="iaid-header">
   <div class="iaid-hrow">
     <div class="iaid-hleft">
-        <div class="iaid-logo">IAID</div>
+        <div class="iaid-logo">{DEPT_CODE}</div>
       <div>
-        <div class="iaid-htitle">Département IA &amp; Ingénierie des Données (IAID)</div>
-        <div class="iaid-hsub">Tableau de bord de pilotage mensuel — Suivi des enseignements par classe &amp; par matière</div>
+        <div class="iaid-htitle">{DEPT_NAME}</div>
+        <div class="iaid-hsub">{DASHBOARD_LABEL}</div>
       </div>
     </div>
     <div class="iaid-meta">
@@ -1765,11 +1783,10 @@ unsafe_allow_html=True
 )
 
 st.markdown(
-"""
+f"""
 <div class="footer-signature">
-  <strong>Ibrahima SY</strong> — Chef de Département • ✉️ ibsy@groupeisi.com
-  <br/>
-  <strong>Assistante :</strong> Dieynaba Barry • ✉️ dbarry1@groupeisi.com
+  <strong>{HEAD_NAME}</strong> — Chef de Département • ✉️ {HEAD_EMAIL}
+  {f"<br/><strong>Assistante :</strong> {ASSIST_NAME} • ✉️ {ASSIST_EMAIL}" if ASSIST_NAME and ASSIST_EMAIL else ""}
 </div>
 """,
 unsafe_allow_html=True
@@ -1786,7 +1803,7 @@ if file_bytes is None:
 
 # 🔄 Auto-refresh propre (Streamlit Cloud) — placé tôt pour éviter double rendering
 if import_mode == "URL (auto)" and auto_refresh:
-    st_autorefresh(interval=refresh_sec * 1000, key="iaid_refresh")
+    st_autorefresh(interval=refresh_sec * 1000, key=f"{DEPT_CODE}_refresh")
 
 
 st.caption(f"Source active : **{source_label}**")
@@ -2596,14 +2613,16 @@ with tab_alertes:
                         )
 
                     body_text_prof = (
-                        f"IAID — Notification de suivi des enseignements\n"
-                        f"Période : {mois_min} → {mois_max}\n\n"
-                        f"Bonjour {prof},\n\n"
-                        f"Lot : {lot}\n"
-                        f"Éléments concernés : {len(gprof)}\n\n"
-                        + "\n".join(lignes_txt)
-                        + "\n\nDépartement IA & Ingénierie des Données (IAID)\n"
+                            f"{DEPT_CODE} — Notification de suivi des enseignements\n"
+                            f"Période : {mois_min} → {mois_max}\n"
+                            f"Département : {DEPT_NAME}\n\n"
+                            f"Bonjour {prof},\n\n"
+                            f"Lot : {lot}\n"
+                            f"Éléments concernés : {len(gprof)}\n\n"
+                            + "\n".join(lignes_txt)
+                            + f"\n\n{DEPT_NAME}\n"
                     )
+
 
                     # ✅ HTML : tu as déjà build_prof_email_html global, on l’utilise ici
                     body_html_prof = build_prof_email_html(
@@ -2615,7 +2634,7 @@ with tab_alertes:
                         gprof=gprof
                     )
 
-                    subject_prof = f"IAID — Notification ({mois_min}→{mois_max}) : {lot.split(' ',1)[1]} — {len(gprof)} élément(s)"
+                    subject_prof = f"{DEPT_CODE} — Notification ({mois_min}→{mois_max}) : {lot.split(' ',1)[1]} — {len(gprof)} élément(s)"
 
                     try:
                         send_email_reminder(
@@ -2737,7 +2756,7 @@ with tab_export:
         st.write("### Export PDF (rapport mensuel officiel)")
         pdf_title = st.text_input(
             "Titre du rapport PDF",
-            value="Rapport mensuel — Suivi des enseignements (IAID) | Département IA & Ingénierie des Données",
+            value=f"Rapport mensuel — Suivi des enseignements ({DEPT_CODE}) | {DEPT_NAME}",
             key="pdf_title_export")
 
         logo_bytes = logo.getvalue() if logo else None
@@ -2753,10 +2772,11 @@ with tab_export:
                 mois_couverts=mois_couverts,
                 thresholds=thresholds,
                 logo_bytes=logo_bytes,
-                author_name="Ibrahima SY",
-                assistant_name="Dieynaba Barry",
-                department="Département IA & Ingénierie des Données (IAID)",
-                institution="Institut Supérieur Informatique",)
+                author_name=HEAD_NAME,
+                assistant_name=ASSIST_NAME if ASSIST_NAME else "—",
+                department=DEPT_NAME,
+                institution=INSTITUTION_NAME
+
 
             st.download_button(
                 "⬇️ Télécharger le PDF",
